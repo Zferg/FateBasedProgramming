@@ -2,7 +2,7 @@
 # forge.sh — bookkeeping for /fate:forge. The orchestrating agent calls these
 # subcommands in order and follows the NEXT line each one prints.
 #
-#   forge.sh init [--out DIR] [--from PATH] [--rounds N] [--per-round K] [--fresh]
+#   forge.sh init [--out DIR] [--from PATH] [--rounds N] [--per-round K] [--vibe TEXT] [--fresh]
 #   forge.sh questions [--out DIR]   pick this round's questions; print every path the agents need
 #   forge.sh verdicts  [--out DIR]   read both reviews; decide CONVERGED / REVISE / STALLED
 #   forge.sh next      [--out DIR]   validate the revised draft, log the round, advance
@@ -11,6 +11,8 @@
 #
 # State lives in DIR/forge/state.json (flat; parsed with sed, no jq needed).
 # Defaults: DIR=./.fate, N=8, K=4, starting draft = whatever find-sheet.sh resolves.
+# --vibe TEXT gives the reader a manner ("a weary noir detective"). It is written into
+# Part I of the draft and printed as a VIBE: line every round, so every agent gets it.
 set -uo pipefail
 
 SELF="$(printf '%s' "${BASH_SOURCE[0]}" | tr '\134' '/')"   # \134 is a backslash: tolerate Windows paths
@@ -22,7 +24,7 @@ die() { echo "forge.sh: $*" >&2; exit 1; }
 
 # ---- arguments --------------------------------------------------------------
 CMD="${1:-status}"; [ $# -gt 0 ] && shift
-OUT="./.fate"; FROM=""; ROUNDS_ARG=""; PER_ARG=""; FRESH=0; DRAFT_FLAG=0
+OUT="./.fate"; FROM=""; ROUNDS_ARG=""; PER_ARG=""; VIBE_ARG=""; FRESH=0; DRAFT_FLAG=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --out)        OUT="$2"; shift 2 ;;
@@ -33,6 +35,8 @@ while [ $# -gt 0 ]; do
     --rounds=*)   ROUNDS_ARG="${1#--rounds=}"; shift ;;
     --per-round)  PER_ARG="$2"; shift 2 ;;
     --per-round=*) PER_ARG="${1#--per-round=}"; shift ;;
+    --vibe)       VIBE_ARG="$2"; shift 2 ;;
+    --vibe=*)     VIBE_ARG="${1#--vibe=}"; shift ;;
     --fresh)      FRESH=1; shift ;;
     --draft)      DRAFT_FLAG=1; shift ;;
     --converged)  shift ;;
@@ -44,7 +48,7 @@ OUTARG=""; [ "$OUT" != "./.fate" ] && OUTARG=" --out $OUT"
 FORGE_CMD="bash \"\${CLAUDE_PLUGIN_ROOT}/scripts/forge.sh\""
 
 # ---- state ------------------------------------------------------------------
-ROUND=0; CURSOR=0; ROUNDS=8; PER=4; SOURCE=""; STARTED=""
+ROUND=0; CURSOR=0; ROUNDS=8; PER=4; SOURCE=""; STARTED=""; VIBE=""
 load_state() {
   [ -r "$STATE" ] || return 1
   ROUND=$(sed -n 's/.*"round": *\([0-9]*\).*/\1/p' "$STATE")
@@ -53,11 +57,12 @@ load_state() {
   PER=$(sed -n 's/.*"per_round": *\([0-9]*\).*/\1/p' "$STATE")
   SOURCE=$(sed -n 's/.*"source": *"\([^"]*\)".*/\1/p' "$STATE")
   STARTED=$(sed -n 's/.*"started": *"\([^"]*\)".*/\1/p' "$STATE")
+  VIBE=$(sed -n 's/.*"vibe": *"\([^"]*\)".*/\1/p' "$STATE")
   return 0
 }
 save_state() {
-  printf '{"round": %s, "cursor": %s, "rounds": %s, "per_round": %s, "source": "%s", "started": "%s"}\n' \
-    "$ROUND" "$CURSOR" "$ROUNDS" "$PER" "$SOURCE" "$STARTED" > "$STATE"
+  printf '{"round": %s, "cursor": %s, "rounds": %s, "per_round": %s, "source": "%s", "started": "%s", "vibe": "%s"}\n' \
+    "$ROUND" "$CURSOR" "$ROUNDS" "$PER" "$SOURCE" "$STARTED" "$VIBE" > "$STATE"
 }
 have() { [ -s "$1" ] && echo yes || echo no; }
 
@@ -76,7 +81,7 @@ must_keys()  {   # $1 review file, $2 prefix S|B → sorted, normalized "Where:"
 # ---- subcommands ------------------------------------------------------------
 cmd_status() {
   load_state || { echo "STATE: no forge in progress under $OUT"; return 0; }
-  echo "STATE: round $ROUND of $ROUNDS, cursor=$CURSOR, per_round=$PER, source=$SOURCE, started=$STARTED"
+  echo "STATE: round $ROUND of $ROUNDS, cursor=$CURSOR, per_round=$PER, source=$SOURCE, started=$STARTED, vibe=${VIBE:-none}"
   echo "DRAFT: $FORGE/draft-v$ROUND.md"
   local d="$FORGE/round-$ROUND"
   echo "HAVE: questions=$(have "$d/questions.md") readings=$(have "$d/readings.md") skeptic=$(have "$d/skeptic.md") believer=$(have "$d/believer.md") resolution=$(have "$d/resolution.md") next_draft=$(have "$FORGE/draft-v$((ROUND+1)).md")"
@@ -85,7 +90,7 @@ cmd_status() {
 cmd_init() {
   if [ "$FRESH" = 1 ] && [ -d "$FORGE" ]; then rm -rf "$FORGE"; fi
   if load_state; then
-    echo "RESUMING: round $ROUND of $ROUNDS (draft $FORGE/draft-v$ROUND.md)"
+    echo "RESUMING: round $ROUND of $ROUNDS (draft $FORGE/draft-v$ROUND.md)${VIBE:+ · vibe: $VIBE}"
     echo "NEXT: $FORGE_CMD questions$OUTARG"
     return 0
   fi
@@ -105,6 +110,19 @@ cmd_init() {
     *)         label="$start" ;;
   esac
   cp "$start" "$FORGE/draft-v0.md"
+  # A vibe is a manner for the reader. Given on the command line, it is written into
+  # Part I under "How the Mystic speaks" (replacing any earlier Vibe: line). Absent, a
+  # Vibe: line already in the sheet is picked up, so a re-forge keeps its manner.
+  # Quotes, pipes and ampersands are dropped: the state file is flat JSON and the
+  # Version stamp goes through sed.
+  VIBE="$(printf '%s' "$VIBE_ARG" | tr -d '"|&' | tr '\n' ' ' | sed -E 's/^ +//; s/ +$//')"
+  if [ -n "$VIBE" ]; then
+    awk -v v="Vibe: $VIBE. The reader wears that manner in every reading. It colors the pictures and the turns of phrase; it never replaces the hedging, the omen and the nudge, or the rule that the trade of the asker stays outside the tent." \
+      '/^Vibe: /{next} {print} /^### How the Mystic speaks/{print v}' "$FORGE/draft-v0.md" > "$FORGE/draft-v0.md.tmp" \
+      && mv "$FORGE/draft-v0.md.tmp" "$FORGE/draft-v0.md"
+  else
+    VIBE="$(sed -n 's/^Vibe: \(.*\)\. The reader wears .*/\1/p' "$FORGE/draft-v0.md" | head -1)"
+  fi
   bash "$HERE/check-sheet.sh" "$FORGE/draft-v0.md" || die "starting draft fails check-sheet; fix it first"
   ROUND=0; CURSOR=0; ROUNDS="${ROUNDS_ARG:-8}"; PER="${PER_ARG:-4}"; SOURCE="$label"
   STARTED="$(date -u +%Y-%m-%dT%H:%MZ)"
@@ -112,10 +130,10 @@ cmd_init() {
   {
     echo "# Forge log"
     echo
-    echo "Started: $STARTED · source: $label ($tier) · max rounds: $ROUNDS · questions per round: $PER"
+    echo "Started: $STARTED · source: $label ($tier) · max rounds: $ROUNDS · questions per round: $PER${VIBE:+ · vibe: $VIBE}"
     echo
   } > "$FORGE/forge-log.md"
-  echo "STATE: round 0 of $ROUNDS, source=$label ($tier), per_round=$PER"
+  echo "STATE: round 0 of $ROUNDS, source=$label ($tier), per_round=$PER, vibe=${VIBE:-none}"
   echo "DRAFT: $FORGE/draft-v0.md"
   echo "NEXT: $FORGE_CMD questions$OUTARG"
 }
@@ -137,6 +155,7 @@ cmd_questions() {
   echo "ROUND: $ROUND of $ROUNDS"
   echo "DRAFT: $FORGE/draft-v$ROUND.md"
   echo "ROUND_DIR: $dir"
+  echo "VIBE: ${VIBE:-none}"
   echo "QUESTIONS:"; sed 's/^/  - /' "$qfile"
   prev=$((ROUND - 1))
   if [ "$ROUND" -gt 0 ]; then
@@ -196,7 +215,8 @@ cmd_verdicts() {
   echo "BELIEVER_REVIEW: $dir/believer.md"
   echo "READINGS: $dir/readings.md"
   echo "RESOLUTION: $dir/resolution.md"
-  echo "NEXT: spawn fate:mystic-forge (MODE: revise) with DRAFT=NEXT_DRAFT and the four paths above; then run: $FORGE_CMD next$OUTARG"
+  echo "VIBE: ${VIBE:-none}"
+  echo "NEXT: spawn fate:mystic-forge (MODE: revise) with DRAFT=NEXT_DRAFT, the four paths above, and VIBE; then run: $FORGE_CMD next$OUTARG"
 }
 
 cmd_next() {
@@ -247,7 +267,7 @@ cmd_finish() {
   [ -s "$final" ] || die "final draft not found: $final"
   stamp=$(date -u +%Y-%m-%d)
   dest="$OUT/tarot-cheat-sheet.md"
-  sed -E "s|^Version:.*|Version: forged v1 · $stamp · $ROUND round(s) · $status · re-forge with /fate:forge|" "$final" > "$dest"
+  sed -E "s|^Version:.*|Version: forged v1 · $stamp · $ROUND round(s) · $status${VIBE:+ · vibe: $VIBE} · re-forge with /fate:forge|" "$final" > "$dest"
   bash "$HERE/check-sheet.sh" "$dest" > /dev/null || die "final sheet fails check-sheet: $dest"
   { echo "## Finished"; echo "Status: $status · final: $(basename "$final") · written to $dest"; echo; } >> "$FORGE/forge-log.md"
   echo "FINAL: $dest ($status, after $ROUND round(s))"
@@ -264,6 +284,6 @@ case "$CMD" in
   next)      cmd_next ;;
   finish)    cmd_finish ;;
   status)    cmd_status ;;
-  -h|--help) sed -n '2,14p' "$SELF" ;;
+  -h|--help) sed -n '2,16p' "$SELF" ;;
   *) die "unknown subcommand: $CMD (init|questions|verdicts|next|finish|status)" ;;
 esac

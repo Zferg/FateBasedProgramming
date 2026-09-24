@@ -1,7 +1,7 @@
 ---
 name: forge
 description: Forge (or re-forge) the Mystic's tarot cheat sheet through rounds of Mystic readings reviewed by the Skeptic and the Believer until both approve. Long-running (several minutes per round); run it when there is time.
-argument-hint: "[--rounds N] [--per-round K] [--out DIR] [--from PATH] [--fresh]"
+argument-hint: "[--rounds N] [--per-round K] [--out DIR] [--from PATH] [--vibe TEXT] [--fresh]"
 allowed-tools: Agent, Read, Write, Bash
 ---
 
@@ -13,20 +13,22 @@ You are the orchestrator of the Forge. A script does the bookkeeping; you spawn 
 - Do not skip, merge, or reorder steps. Do not stop early unless a script prints `CONVERGED`, `STALLED`, or `DONE`.
 - Make sure `FATE_SEED` is not set in the environment (it would make every draw identical).
 - Tell the human what is happening in one short line per step: "Round 2: readings", "Round 2: reviews", "Round 2: revising (Skeptic 5 must, Believer 2 must)".
+- A **vibe** is a manner for the reader, given by the human as `--vibe "a weary noir detective"` or `--vibe "your grandmother who has seen it all"`. The script writes it into Part I of the draft and prints a `VIBE:` line with every round (`none` when there is not one). Put that line, exactly as printed, in every agent prompt below: the Mystic reads in the vibe, the Skeptic and the Believer judge for it.
 
-The script is `bash "${CLAUDE_PLUGIN_ROOT}/scripts/forge.sh"`; the arguments above go to `init` (for example `--rounds 6 --out ./.fate`). If `--out` is given, pass the same `--out` to every later call; the printed `NEXT:` lines already include it.
+The script is `bash "${CLAUDE_PLUGIN_ROOT}/scripts/forge.sh"`; the arguments above go to `init` (for example `--rounds 6 --out ./.fate --vibe "a weary noir detective"`). If `--out` is given, pass the same `--out` to every later call; the printed `NEXT:` lines already include it.
 
 ## The loop
 
 1. **Init.** `bash "${CLAUDE_PLUGIN_ROOT}/scripts/forge.sh" init <arguments>`. It prints `STATE`, `DRAFT`, and `NEXT`. If it prints `RESUMING`, continue from the round it names.
 
-2. **Questions.** Run the `questions` call it named. It prints `ROUND`, `DRAFT`, `ROUND_DIR`, the `QUESTIONS`, the `PREV_*` paths (or `none`), and `HAVE:` flags saying which artifacts already exist for this round.
+2. **Questions.** Run the `questions` call it named. It prints `ROUND`, `DRAFT`, `ROUND_DIR`, `VIBE`, the `QUESTIONS`, the `PREV_*` paths (or `none`), and `HAVE:` flags saying which artifacts already exist for this round.
 
 3. **Readings.** Unless `readings=yes`, spawn `fate:mystic-forge` with this prompt, filling the values in:
    ```
    MODE: readings
    DRAFT: <DRAFT>
    ROUND_DIR: <ROUND_DIR>
+   VIBE: <VIBE>
    QUESTIONS:
    - <question 1>
    - <question 2>
@@ -40,6 +42,7 @@ The script is `bash "${CLAUDE_PLUGIN_ROOT}/scripts/forge.sh"`; the arguments abo
    READINGS: <ROUND_DIR>/readings.md
    PARTNER: <PREV_BELIEVER>
    RESOLUTION: <PREV_RESOLUTION>
+   VIBE: <VIBE>
    OUT: <ROUND_DIR>/skeptic.md
    ```
    The Believer's is the same with `PARTNER: <PREV_SKEPTIC>` and `OUT: <ROUND_DIR>/believer.md`. Wait for both.
@@ -55,6 +58,7 @@ The script is `bash "${CLAUDE_PLUGIN_ROOT}/scripts/forge.sh"`; the arguments abo
      BELIEVER: <BELIEVER_REVIEW>
      READINGS: <READINGS>
      RESOLUTION: <RESOLUTION>
+     VIBE: <VIBE>
      ```
      Wait for it.
 
