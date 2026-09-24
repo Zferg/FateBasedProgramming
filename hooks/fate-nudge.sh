@@ -13,5 +13,5 @@ fi
 cat > /dev/null   # consume the payload; we do not need it
 
 cat <<'EOF'
-{"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext":"Fate Protocol (plugin fate) is active. Before presenting a plan of three or more steps, or before a risky operation (migration, mass deletion, deploy, dependency upgrade, wide refactor), consult the fate:mystic subagent once with a one-line question, print its Reading Block verbatim in a fenced block, and state in one sentence how the Counsel changed the plan. Not for small single-step tasks; at most one unprompted reading per task. Full rules: the fate:fate-protocol skill. Skip if the human said no readings."}}
+{"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext":"Fate Protocol (plugin fate) is active. Before presenting a plan of three or more steps, or before a risky operation (migration, mass deletion, deploy, dependency upgrade, wide refactor), consult the fate:mystic subagent once with a one-line question, print its Reading Block verbatim in a fenced block, and say in one sentence what its images correspond to in this task and what you took from it. Not for small single-step tasks; at most one unprompted reading per task. Full rules: the fate:fate-protocol skill. Skip if the human said no readings."}}
 EOF
