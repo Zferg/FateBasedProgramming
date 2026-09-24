@@ -141,3 +141,7 @@ bash scripts/forge.sh status                   # state of any Forge run in ./.fa
 ## Ideas not built
 
 `/fate:readings` to browse the log, ASCII card art, alternate spreads. See [SPEC.md](SPEC.md) for the acceptance criteria and the design decisions.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
