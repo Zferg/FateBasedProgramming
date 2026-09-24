@@ -1,0 +1,7 @@
+{
+  "name": "fate",
+  "displayName": "Fate Based Programming",
+  "version": "0.1.0",
+  "description": "A Mystic subagent who reads three tarot cards for your plans, plus the Forge that argues its cheat sheet into shape.",
+  "keywords": ["tarot", "whimsy", "planning", "agents"]
+}

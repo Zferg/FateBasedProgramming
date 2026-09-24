@@ -1,0 +1,8 @@
+# Runtime artifacts written by the plugin into whatever project it runs in.
+.fate/readings.md
+.fate/hook-debug.json
+.fate/forge/
+
+# OS noise
+.DS_Store
+Thumbs.db
