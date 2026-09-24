@@ -67,7 +67,16 @@ The Mystic reads only from `tarot-cheat-sheet.md`. The plugin ships one that was
 
 Each round, the Mystic reads four sample questions against the current draft and notes which entries it leaned on and where the book let it down. Then two reviewers read the draft and the readings in parallel: the **Skeptic**, who does not believe in any of this but cannot resist it, judges whether the readings are fun and honest and whether the sheet keeps the Mystic sounding like a reader rather than a manual; the **Believer**, who fully intends to steer by it, judges whether every card in every position gives her something worth thinking about. Each files change requests marked `must` or `nice`. The Mystic applies them, records what was rejected and why, and the next round begins. It ends when both approve the same draft (zero `must` items), when the same dispute survives three rounds (the human rules), or at the round limit.
 
-The shipped sheet is the imagery seed argued into shape under this brief on 2026-09-19; it converged in two rounds, and the argument is in `cheat-sheet/forge-log.md`. Re-forging writes to `.fate/tarot-cheat-sheet.md` (which overrides the shipped sheet for that project) with the whole argument under `.fate/forge/`. Options: `--rounds N` (default 8), `--per-round K` (default 4), `--out DIR`, `--from PATH`, `--fresh`. An interrupted run resumes where it stopped.
+The shipped sheet is the imagery seed argued into shape under this brief on 2026-09-19; it converged in two rounds, and the argument is in `cheat-sheet/forge-log.md`. Re-forging writes to `.fate/tarot-cheat-sheet.md` (which overrides the shipped sheet for that project) with the whole argument under `.fate/forge/`. Options: `--rounds N` (default 8), `--per-round K` (default 4), `--out DIR`, `--from PATH`, `--vibe TEXT`, `--fresh`. An interrupted run resumes where it stopped.
+
+### Giving the reader a vibe
+
+```
+/fate:forge --vibe "a weary noir detective"
+/fate:forge --vibe "your grandmother who has seen it all"
+```
+
+A vibe is a manner for the reader. The Forge writes it into Part I of the draft as a `Vibe:` line under "How the Mystic speaks" and hands it to every agent in every round: the Mystic reads the sample questions in that manner, the Skeptic checks that the readings sound like that reader from the first line to the sign-off and that the sheet describes the manner rather than just naming it, and the Believer checks that the character never crowds out the cards or costs her the nudge. The vibe colors the pictures and the turns of phrase; the hedging, the omen and the nudge, and the ban on the asker's trade stay as they are. The forged sheet keeps the `Vibe:` line, the Mystic wears it whenever it reads from that sheet, and a later re-forge of the same sheet picks the vibe up without being told again. The Version stamp on the finished sheet records it.
 
 ## How it fits together
 
@@ -76,6 +85,32 @@ The shipped sheet is the imagery seed argued into shape under this brief on 2026
 3. The `PostToolUse` hook sees the reading in the subagent's result and shows it to the human as a system message; the asker prints it again in a fenced block and, if mid-task, says what it took from it.
 
 The Forge is the same Mystic plus two reviewers, driven by `forge.sh`, which keeps its state in `.fate/forge/state.json` so the orchestrating agent never has to hold the draft or the reviews in its own context.
+
+## What a reading costs
+
+A reading is a chain of model turns that have to run one after another, so it takes minutes, not seconds. In order:
+
+1. **Main agent turn.** Loads the skill, reads the question, decides to spawn the Mystic.
+2. **Mystic turn 1.** Runs `draw.sh` and `find-sheet.sh` in one bash call.
+3. **Mystic turn 2.** Reads the cheat sheet in full: 874 lines, roughly 12k tokens, every time, because the Mystic is told to lean on the whole book including the Part III patterns.
+4. **Mystic turn 3.** Writes the reading and pipes it to `log-reading.sh`. This is the long generation step.
+5. **Relay hook.** Fires on the subagent's result and shows the reading to the human as a system message.
+6. **Main agent final turn.** Prints the reading in a fenced block and, if mid-task, says what it took from it.
+
+Measured on 2026-09-24 from the relay hook's payload, which records the Mystic subagent on its own (Sonnet, Windows, Git Bash). The reading it produced is [current-example.md](current-example.md).
+
+| Metric | Value |
+|---|---|
+| Mystic wall time | 73 s |
+| Mystic tool calls | 3 |
+| Tokens through the Mystic | ~40k, most of them the same context re-read from cache on each turn |
+| Whole `/fate:reading` turn, non-interactive | 3 to 4 minutes |
+
+In an interactive session it feels shorter than that: the hook shows the reading the moment the Mystic returns, before the main agent's final turn. Each bash call also costs a process spawn, which is slower under Git Bash on Windows than on a Unix shell.
+
+### Fix incoming
+
+Step 3 is the fat. The Mystic reads all 78 entries to use three of them. The planned change is a script step that prints only what the draw needs, Part I for the voice, the three drawn cards' entries, and Part III for the patterns, so the Mystic reads about 2k tokens instead of 12k and skips a turn. The reading's shape and the sheet's format stay the same, and `check-sheet.sh` keeps validating the whole book. Not built yet; the numbers above are the baseline it will be measured against.
 
 ## What is here
 
@@ -100,6 +135,7 @@ The Forge is the same Mystic plus two reviewers, driven by `forge.sh`, which kee
 | `data/forge-questions.md` | The 20 sample questions the Forge rotates through. |
 | `cheat-sheet/tarot-cheat-sheet.md`, `cheat-sheet/forge-log.md` | The shipped, forged sheet and the log of the argument that produced it. |
 | `prior-example.md` | A reading from before the imagery revision, kept for contrast: it translates the cards into the asker's trade, which the current Mystic never does. |
+| `current-example.md` | A reading from the current Mystic, taken from the 2026-09-24 test run: pictures only, with the translation left to the asker. |
 
 ## Configuration
 
