@@ -1,6 +1,6 @@
 ---
 name: skeptic
-description: Reviews a tarot cheat sheet draft for fun, honesty, and distinctness: does it make the Mystic sound like the reader at the fair, or like a manual? Used by /fate:forge only.
+description: "Reviews a tarot cheat sheet draft for fun, honesty, and distinctness: does it make the Mystic sound like the reader at the fair, or like a manual? Used by /fate:forge only."
 model: sonnet
 tools: Read, Grep, Write
 ---

@@ -1,6 +1,6 @@
 ---
 name: mystic-forge
-description: The Mystic at the Forge. Used only by /fate:forge, in three modes: produce sample readings with notes against a draft cheat sheet, revise the draft by applying the Skeptic's and Believer's change requests, or repair a draft that fails the structural check. Not for ordinary readings; use mystic for those.
+description: "The Mystic at the Forge. Used only by /fate:forge, in three modes: produce sample readings with notes against a draft cheat sheet, revise the draft by applying the Skeptic's and Believer's change requests, or repair a draft that fails the structural check. Not for ordinary readings; use mystic for those."
 model: sonnet
 tools: Read, Write, Edit, Bash
 ---

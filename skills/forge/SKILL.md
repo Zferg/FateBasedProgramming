@@ -1,7 +1,7 @@
 ---
 name: forge
 description: Forge (or re-forge) the Mystic's tarot cheat sheet through rounds of Mystic readings reviewed by the Skeptic and the Believer until both approve. Long-running (several minutes per round); run it when there is time.
-argument-hint: [--rounds N] [--per-round K] [--out DIR] [--from PATH] [--fresh]
+argument-hint: "[--rounds N] [--per-round K] [--out DIR] [--from PATH] [--fresh]"
 allowed-tools: Agent, Read, Write, Bash
 ---
 
