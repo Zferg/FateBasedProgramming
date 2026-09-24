@@ -38,12 +38,20 @@ The main agent spawns the Mystic, prints the reading, and (if it is mid-task) sa
 Question: Will this agent do its assigned spec step to a desirable outcome?
 Cards: The Chariot · Strength (reversed) · Eight of Wands (reversed)
 
-You ask whether the step before you will end well. The Chariot rides through your situation, and I like that: reins in hand, wheels already turning, a will that knows where it is going. But Strength lies reversed across your path, and, hm. The lion in this picture is not tamed, only held, and the hand that holds it is tired. There is force here where there should be patience. And at the end of the row, the Eight of Wands, reversed. Arrows that leave the bow and fall short in the grass. Delay, I think. Frustration. Not ruin, but not the clean landing the Chariot promised. If I were you I would ride a little slower than you want to, and let the lion come to you.
+You ask whether the step before you will end well.
+
+The Chariot rides through your situation, and I like that: reins in hand, wheels already turning, a will that knows where it is going.
+
+But Strength lies reversed across your path, and, hm. The lion in this picture is not tamed, only held, and the hand that holds it is tired. There is force here where there should be patience.
+
+And at the end of the row, the Eight of Wands, reversed. Arrows that leave the bow and fall short in the grass. Delay, I think. Frustration. Not ruin, but not the clean landing the Chariot promised.
+
+If I were you I would ride a little slower than you want to, and let the lion come to you.
 
 The cards have spoken.
 ```
 
-The Mystic speaks in the cards' pictures and never in your trade. Working out that the tired hand on the lion is your rushed test plan is your half of the ritual; when an agent asked, the Fate Protocol makes it say its translation out loud.
+The Mystic speaks in short stanzas, one per card, in the cards' pictures and never in your trade. Working out that the tired hand on the lion is your rushed test plan is your half of the ritual; when an agent asked, the Fate Protocol makes it say its translation out loud.
 
 ## Consulting on its own
 
